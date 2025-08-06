@@ -11,6 +11,58 @@ from ctypes import windll
 from PIL import Image
 import numpy as np
 
+
+class SearchModel:
+    def __init__(self,ocr_model) -> None:
+        self.ocrModel = ocr_model
+        self.getAnchor = False
+        self.anchorLocation = [[-1,-1],[-1,-1],[-1,-1],[-1,-1]]
+        self.color = (0,255,0)
+
+    def isSearchByOcr(self,img):
+        result = self.ocrModel.get(img)
+        boxes=result.boxes
+        txts=result.txts
+        index = -1
+        for i in range(len(txts)):
+            if txts[i] == '正在搜索物资':
+                index = i
+                break
+
+        if index == -1:
+            return False
+        self.getAnchor = True
+        self.anchorLocation = boxes[index]
+        self.color = self.getColorByLoc(img)
+        return True
+    
+    def getColorByLoc(self,img):
+        x = int(self.anchorLocation[2][1])
+        y = int(self.anchorLocation[2][0])
+        # 取周围的颜色 不能超过边界
+        x1 = max(0,x-1)
+        x2 = min(img.shape[0],x+2)
+        y1 = max(0,y-1)
+        y2 = min(img.shape[1],y+2)
+        color = img[x1:x2,y1:y2]
+        return color.mean(axis=(0,1))
+
+    def isSearchByLocation(self,img):
+        if not self.getAnchor:
+            return False
+        color = self.getColorByLoc(img)
+        if np.abs(self.color - color).sum() < 10:
+            return True
+        return False
+
+    def isSearch(self,img):
+        if self.getAnchor:
+            return self.isSearchByLocation(img)
+        else:
+            return self.isSearchByOcr(img)
+
+    
+
 class RapidOcr:
     def __init__(self) -> None:
         self.engine = RapidOCR(params={
