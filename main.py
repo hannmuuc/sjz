@@ -167,7 +167,9 @@ def Test():
 
  
 
+def test_gpu():
 
+    printf("test")
 
 
  
@@ -191,5 +193,5 @@ def doOcrContinue():
 
 
 if __name__ == "__main__":
-    Test()
+    test_gpu()
 
