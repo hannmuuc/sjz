@@ -49,6 +49,16 @@ class RapidOcr:
             displayRes = self.addChineseText(displayRes,txt,(x1,y1-35))
         return displayRes
 
+class RapidOcrGPU:
+    def __init__(self) -> None:
+        # 注意这里的参数
+        from rapidocr_paddle import RapidOCR
+        self.engine = RapidOCR(det_use_cuda=True, cls_use_cuda=True, rec_use_cuda=True,ocr_version="PP-OCRv5")
+
+
+
+    def doOcr(self,img):
+        return self.engine(img)
 
 class AnchorModel:
     def __init__(self) -> None:
@@ -56,7 +66,7 @@ class AnchorModel:
         self.lowH = 0.05
         self.lowW = 0.65
         self.highH = 0.55
-        self.highW = 0.9
+        self.highW = 0.88
         self.sct = mss.mss()
         
         # 计算monitor区域

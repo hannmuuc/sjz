@@ -169,7 +169,46 @@ def Test():
 
 def test_gpu():
 
-    printf("test")
+    import paddle
+    from util.model import RapidOcrGPU
+    print(paddle.utils.run_check())
+    print(paddle.device.get_device())
+
+    url_list = [
+        "./pic/1.png",
+        "./pic/2.png",
+        "./pic/3.png",
+        "./pic/4.png",
+    ]
+
+    ocrModel = RapidOcrGPU()
+    anchorModel = AnchorModel()    
+
+    img_list = []
+    for url in url_list:
+        img = cv2.imread(url)
+        img_list.append(img)
+
+
+    img_tmp,(lowH, lowW, highH, highW) = anchorModel.getAnchor(img_list[0])
+    res = ocrModel.doOcr(img_tmp)
+
+
+
+    start_time = time.time()
+    count = 0
+    while(True):
+        index = count%4
+        img_tmp,(lowH, lowW, highH, highW) = anchorModel.getAnchor(img_list[index])
+        res = ocrModel.doOcr(img_tmp)
+
+        count += 1
+        if count % 10 == 0:
+            end_time = time.time()
+            print("{:.2f}ms".format((end_time - start_time)*1000/10))
+            start_time = end_time
+
+
 
 
  
