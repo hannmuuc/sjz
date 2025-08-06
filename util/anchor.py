@@ -194,13 +194,16 @@ def getSquareParamC(img,display=False):
     # 水平求和并找到最大的
     horizontal_sum = np.sum(vertical_edges, axis=0)
     max_index = np.argmax(horizontal_sum)
+    max_sum = horizontal_sum[max_index]
     length = len(horizontal_sum)
     # 找到不在最大附近的长度10%sum置为0
     horizontal_sum[max_index-min(length//10,max_index):max_index+min(length//10,length-max_index)] = 0
     second_max_index = np.argmax(horizontal_sum)
+    second_max_sum = horizontal_sum[second_max_index]
 
     if max_index > second_max_index:
         max_index,second_max_index = second_max_index,max_index
+        max_sum,second_max_sum = second_max_sum,max_sum
 
     anchorPoint =boxes[index][2]
     x,y = int(anchorPoint[0]),int(anchorPoint[1])
@@ -217,7 +220,7 @@ def getSquareParamC(img,display=False):
     centerX = max_index
     for i in range(vertical_edges.shape[0]):
         sumNums += int(vertical_edges[i,centerX])
-        if sumNums*2>horizontal_sum[centerX]:
+        if sumNums*2>max_sum:
             centerY = i
             break
     
