@@ -199,6 +199,9 @@ def getSquareParamC(img,display=False):
     horizontal_sum[max_index-min(length//10,max_index):max_index+min(length//10,length-max_index)] = 0
     second_max_index = np.argmax(horizontal_sum)
 
+    if max_index > second_max_index:
+        max_index,second_max_index = second_max_index,max_index
+
     anchorPoint =boxes[index][2]
     x,y = int(anchorPoint[0]),int(anchorPoint[1])
 
@@ -211,7 +214,7 @@ def getSquareParamC(img,display=False):
 
     sumNums = 0
     centerY = 0
-    centerX = second_max_index
+    centerX = max_index
     for i in range(vertical_edges.shape[0]):
         sumNums += int(vertical_edges[i,centerX])
         if sumNums*2>horizontal_sum[centerX]:
