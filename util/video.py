@@ -13,8 +13,8 @@ import shutil
 import json
 
 def saveImg(img,t,isSearch=False):
-    hitResult = "./dataset/hit/result.txt"
-    noHitResult = "./dataset/nohit/result.txt"
+    hitResult = "./dataset/source/hit/result.txt"
+    noHitResult = "./dataset/source/nohit/result.txt"
 
     if isSearch:
         cv2.imwrite(f"./dataset/hit/image/{t}.jpg", img)
