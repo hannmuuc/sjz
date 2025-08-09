@@ -10,6 +10,8 @@ from util.model import RapidOcr,AnchorModel
 from util.anchor import getSquareParamC,preImageSolve,squareDetect
 from util.draw import drawMatrix
 import numpy as np
+from util.video import videoSolve
+
 
 class DynamicRectangleDrawer:
     def __init__(self, root):
@@ -164,11 +166,62 @@ def Test():
     # 生成显示图像
     displayImage = drawMatrix(zero_matrix)
 
+def test_gpu():
 
- 
+    import paddle
+    from util.model import RapidOcrGPU
+    print(paddle.utils.run_check())
+    print(paddle.device.get_device())
+
+    url_list = ["train_time_210s.jpg"]
+
+    ocrModel = RapidOcrGPU()
+    anchorModel = AnchorModel()    
+
+    img_list = []
+    for url in url_list:
+        img = cv2.imread(url)
+        img_list.append(img)
+
+
+    img_tmp,(lowH, lowW, highH, highW) = anchorModel.getAnchor(img_list[0])
+    res = ocrModel.doOcr(img_tmp)
 
 
 
+    start_time = time.time()
+    count = 0
+    while(True):
+        index = count%len(img_list)
+        img_tmp,(lowH, lowW, highH, highW) = anchorModel.getAnchor(img_list[index])
+        res = ocrModel.doOcr(img_tmp)
+
+        count += 1
+        if count % 10 == 0:
+            end_time = time.time()
+            print("{:.2f}ms".format((end_time - start_time)*1000/10))
+            start_time = end_time
+
+
+def test_cpu():
+    ocrModel = RapidOcr()
+    anchorModel = AnchorModel()
+    anchorModel.changeRate(0.69, 0.75, 0.08, 0.20)
+
+    img =cv2.imread("train_time_210s.jpg")
+
+    img_anchor,(lowH, lowW, highH, highW) = anchorModel.getAnchor(img)
+
+    cv2.imshow("img",img_anchor)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    # 帮我计算100次平均时间
+    start_time = time.time()
+    for i in range(10):
+        res = ocrModel.doOcr(img_anchor)
+    end_time = time.time()
+    print("10次平均时间: {:.2f}ms".format((end_time - start_time)*1000/10))
 
  
 def doOcrContinue():
@@ -190,6 +243,14 @@ def doOcrContinue():
         time.sleep(0.1)
 
 
+
+
 if __name__ == "__main__":
-    Test()
+    from util.video import videoSolve
+    from util.multi_video import multiVideoTask
+
+    videoSolve(use_cuda=True)
+    # multiVideoTask()
+
+
 
