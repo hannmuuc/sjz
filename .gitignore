@@ -11,6 +11,8 @@ video/
 secret.txt
 .env
 *.mp4
+*.jpg
+*.png
 
 # 忽略IDE生成的文件（如VS Code）
 .vscode/
