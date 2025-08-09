@@ -137,6 +137,12 @@ class AnchorModel:
         self.hdc_obj = None  # 新增：PyCDC对象（之前可能遗漏）
         self.hdc_mem = None
         self.bmp = None
+    
+    def changeRate(self,lowW,highW,lowH,highH):
+        self.lowH = lowH
+        self.lowW = lowW
+        self.highH = highH
+        self.highW = highW
 
     def getAnchor(self, image):
         h, w, c = image.shape

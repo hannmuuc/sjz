@@ -1,6 +1,6 @@
+from ast import If
 import cv2
-from util.ocr import RapidOcr
-from util.anchor_box import AnchorBound
+from util.model import RapidOcr,AnchorModel,RapidOcrGPU
 import cv2
 import time
 from datetime import datetime, timedelta
@@ -12,24 +12,132 @@ import glob
 import shutil
 import json
 
+def extract_frame_by_second(video_path, time_seconds, output_path=None):
+        """
+        从视频中提取指定时间点的帧
+        
+        参数:
+            video_path: 视频文件路径
+            time_seconds: 要提取帧的时间点（秒）
+            output_path: 保存帧的图片路径，默认为视频名+时间.jpg
+        """
+        # 打开视频文件
+        cap = cv2.VideoCapture(video_path)
+        
+        # 检查视频是否成功打开
+        if not cap.isOpened():
+            print(f"无法打开视频文件: {video_path}")
+            return False
+        
+        # 获取视频属性
+        fps = cap.get(cv2.CAP_PROP_FPS)  # 帧率
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))  # 总帧数
+        duration = total_frames / fps  # 视频总时长（秒）
+        
+        print(f"视频帧率: {fps:.2f} FPS")
+        print(f"视频总时长: {duration:.2f} 秒")
+        
+        # 检查指定时间是否在有效范围内
+        if time_seconds < 0 or time_seconds > duration:
+            print(f"时间无效，有效范围: 0 到 {duration:.2f} 秒")
+            cap.release()
+            return False
+        
+        # 根据时间计算对应的帧编号
+        frame_number = int(time_seconds * fps)
+        print(f"将提取第 {frame_number} 帧（对应 {time_seconds} 秒）")
+        
+        # 设置要读取的帧位置
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+        
+        # 读取帧
+        ret, frame = cap.read()
+        
+        # 释放视频捕获对象
+        cap.release()
+        
+        if not ret:
+            print(f"无法读取 {time_seconds} 秒对应的帧")
+            return False
+        
+        # 如果未指定输出路径，则生成默认路径
+        if output_path is None:
+            video_name = os.path.splitext(os.path.basename(video_path))[0]
+            output_path = f"{video_name}_time_{time_seconds}s.jpg"
+        
+        # 保存帧为图片
+        cv2.imwrite(output_path, frame)
+        print(f"成功提取 {time_seconds} 秒的帧，保存至: {output_path}")
+        return True
+
+def extract_frame(video_path, frame_number, output_path=None):
+        """
+        从视频中提取指定帧
+        
+        参数:
+            video_path: 视频文件路径
+            frame_number: 要提取的帧编号(从0开始)
+            output_path: 保存帧的图片路径，默认为视频名+帧号.jpg
+        """
+        # 打开视频文件
+        cap = cv2.VideoCapture(video_path)
+        
+        # 检查视频是否成功打开
+        if not cap.isOpened():
+            print(f"无法打开视频文件: {video_path}")
+            return False
+        
+        # 获取视频总帧数
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        print(f"视频总帧数: {total_frames}")
+        
+        # 检查指定的帧是否在有效范围内
+        if frame_number < 0 or frame_number >= total_frames:
+            print(f"帧编号无效，有效范围: 0 到 {total_frames-1}")
+            cap.release()
+            return False
+        
+        # 设置要读取的帧位置
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+        
+        # 读取帧
+        ret, frame = cap.read()
+        
+        # 释放视频捕获对象
+        cap.release()
+        
+        if not ret:
+            print(f"无法读取第 {frame_number} 帧")
+            return False
+        
+        # 如果未指定输出路径，则生成默认路径
+        if output_path is None:
+            video_name = os.path.splitext(os.path.basename(video_path))[0]
+            output_path = f"{video_name}_frame_{frame_number}.jpg"
+        
+        # 保存帧为图片
+        cv2.imwrite(output_path, frame)
+        print(f"成功提取第 {frame_number} 帧，保存至: {output_path}")
+        return True
+
 def saveImg(img,t,isSearch=False):
     hitResult = "./dataset/source/hit/result.txt"
     noHitResult = "./dataset/source/nohit/result.txt"
 
     if isSearch:
-        cv2.imwrite(f"./dataset/hit/image/{t}.jpg", img)
+        cv2.imwrite(f"./dataset/source/hit/image/{t}.jpg", img)
         # 追加写入
         with open(hitResult, "a") as file:
             file.write(f"{t}\n")
     else:
-        cv2.imwrite(f"./dataset/nohit/image/{t}.jpg", img)
+        cv2.imwrite(f"./dataset/source/nohit/image/{t}.jpg", img)
         # 追加写入
         with open(noHitResult, "a") as file:
             file.write(f"{t}\n")
 
 def readResult():
-    hitResult = "./dataset/hit/result.txt"
-    noHitResult = "./dataset/nohit/result.txt"
+    hitResult = "./dataset/source/hit/result.txt"
+    noHitResult = "./dataset/source/nohit/result.txt"
     # 存储是每行一个数字
     max_index = 0
     # 处理hitResult文件
@@ -58,18 +166,44 @@ def readResult():
         
     return max_index
 
-def doOcr(img,ocrModel,anchorModel):
-    anchorModel.change_rate(0.69, 0.75, 0.10, 0.20)
-    img_anchor, (rateW1,rateW2, rateH1,rateH2) = anchorModel.get(img)
-    res = ocrModel.get(img_anchor)
-    if len(res.elapse_list) == 0:
+
+# 提取所有识别的文字（类别标签）
+def extract_labels(detection_data):
+    # 第一部分是目标检测列表
+    objects = detection_data[0]
+    labels = []
+    if objects is None:
+        return labels
+
+    
+    for obj in objects:
+        # 每个目标的第二个元素是文字标签
+        label = obj[1]
+        labels.append(label)
+    
+    return labels
+
+def doOcr(img,ocrModel,anchorModel,use_cuda=False):
+    anchorModel.changeRate(0.69, 0.75, 0.08, 0.20)
+    img_anchor, (rateW1,rateW2, rateH1,rateH2) = anchorModel.getAnchor(img)
+    res = ocrModel.doOcr(img_anchor)
+
+    if use_cuda:
+        res = ocrModel.doOcr(img_anchor)
+        labels = extract_labels(res)
+        if "正在搜索物资" in labels:
+            return 1
         return 0
 
-    txts = res.txts
-    for txt in txts:
-        if txt == "正在搜索物资":
-            return 1
-    return 0
+    else:
+        if len(res.elapse_list) == 0:
+            return 0
+
+        txts = res.txts
+        for txt in txts:
+            if txt == "正在搜索物资":
+                return 1
+        return 0
 
 def videoCheck(video_file):
       # 配置日志：实时输出到控制台，禁用缓冲
@@ -166,7 +300,7 @@ def videoCheck(video_file):
     
     cap.release()
 
-def videoSolve():
+def videoSolve(use_cuda=False):
     # 配置日志：实时输出到控制台，禁用缓冲
     # 移除之前的日志禁用，确保INFO级别日志能输出
     logging.basicConfig(
@@ -181,7 +315,10 @@ def videoSolve():
 
     video_file = "./video/train.mp4"
     ocrModel = RapidOcr()
-    anchorModel = AnchorBound()
+    anchorModel = AnchorModel()
+    if use_cuda:
+        ocrModel = RapidOcrGPU()
+
     begin = readResult() + 1
     
     cap = cv2.VideoCapture(video_file)
@@ -208,6 +345,8 @@ def videoSolve():
     frame_times = []  # 存储每帧处理时间，用于更准确的估算
     
     logging.info(f"开始从第 {begin} 帧处理视频，总剩余帧数: {remaining_frames}")
+    print(f"开始从第 {begin} 帧处理视频，总剩余帧数: {remaining_frames}")
+
     logging.disable(logging.WARNING)
     
     while success:
@@ -218,7 +357,9 @@ def videoSolve():
             break
         
         # 处理当前帧
-        result = doOcr(frame, ocrModel, anchorModel)
+        result = doOcr(frame, ocrModel, anchorModel,use_cuda=use_cuda)
+
+
         hitCount += result
         
         if result == 1:

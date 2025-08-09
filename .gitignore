@@ -3,10 +3,14 @@
 
 # 忽略node_modules目录
 node_modules/
+dataset/
+video/
+
 
 # 忽略特定文件
 secret.txt
 .env
+*.mp4
 
 # 忽略IDE生成的文件（如VS Code）
 .vscode/
