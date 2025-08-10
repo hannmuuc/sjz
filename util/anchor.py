@@ -148,6 +148,25 @@ def draw_rectangles_on_image(img, rectangles):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+def getAreaLocation(counters):
+    succ = False
+    if len(counters) == 0 or len(counters) > 10:
+        return succ,-1,-1,-1,-1
+    counters = remove_contained_rectangles(counters)
+    if len(counters) != 2:
+        return succ,-1,-1,-1,-1
+    
+    firstCounter = counters[0]
+    seconCounter = counters[1]  
+
+    if firstCounter[0] >seconCounter[0]:
+        firstCounter,seconCounter = seconCounter,firstCounter
+
+    succ = True
+
+    return succ,firstCounter[0],firstCounter[1],seconCounter[2],seconCounter[3]
+
+
 
 '''
 依赖

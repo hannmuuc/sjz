@@ -402,10 +402,10 @@ def videoSolve(use_cuda=False):
 def doFilter(img):
     if img is None:
         return False,[-1,-1,-1,-1]
-    from util.anchor_box import AnchorBound
-    anchorModel = AnchorBound()
-    anchorModel.change_rate(0.65, 0.95, 0.05, 0.6)
-    img_anchor,(rateW1,rateW2, rateH1,rateH2) = anchorModel.get(img)
+    from util.model import AnchorModel
+    anchorModel = AnchorModel()
+    anchorModel.changeRate(0.65, 0.95, 0.05, 0.6)
+    img_anchor,(lowH, lowW, highH, highW) = anchorModel.getAnchor(img)
 
     gray = cv2.cvtColor(img_anchor, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
@@ -421,19 +421,16 @@ def doFilter(img):
     # Canny边缘检测
     vertical_edges = cv2.Canny(scaled_image, 50, 150, apertureSize=3)
 
+    kernel = np.ones((2, 2), np.uint8)  # 3x3正方形核
+    vertical_edges = cv2.dilate(vertical_edges, kernel, iterations=1)
+
+
      # 水平求和并找到最大的
+
+    bound_index = -1
     horizontal_sum = np.sum(vertical_edges, axis=0)
     max_index = np.argmax(horizontal_sum)
     max_sum = horizontal_sum[max_index]
-    length = len(horizontal_sum)
-    # 找到不在最大附近的长度10%sum置为0
-    horizontal_sum[max_index-min(length//10,max_index):max_index+min(length//10,length-max_index)] = 0
-    second_max_index = np.argmax(horizontal_sum)
-    second_max_sum = horizontal_sum[second_max_index]
-
-    if max_index > second_max_index:
-        max_index,second_max_index = second_max_index,max_index
-        max_sum,second_max_sum = second_max_sum,max_sum
 
     anchorPoint = [180.,  69.]
     x,y = int(anchorPoint[0]),int(anchorPoint[1])
@@ -442,6 +439,7 @@ def doFilter(img):
         if vertical_edges[y,i] == 255:
             break
         vertical_edges[y,i] = 255
+        bound_index = i
     for i in range(x,max_index,-1):
         vertical_edges[y,i] = 255
 
@@ -453,24 +451,20 @@ def doFilter(img):
         if sumNums*2>max_sum:
             centerY = i
             break
-  
     
-    for i in range(max_index,second_max_index):
+    for i in range(max_index,bound_index):
         vertical_edges[centerY,i] = 255
 
-    kernel = np.ones((2, 2), np.uint8)  # 3x3正方形核
-    dilate_image = cv2.dilate(vertical_edges, kernel, iterations=3)
+    dilate_image = cv2.dilate(vertical_edges, kernel, iterations=2)
 
-    from util.anchor_box import detect_large_regions,getAreaLocation
+
+    from util.anchor import detect_large_regions,getAreaLocation
     # 检测区域
     counters = detect_large_regions(dilate_image)
 
     succ,x1,y1,x2,y2 = getAreaLocation(counters)
     if succ:
-        # 先找回原始坐标
-        movex = img.shape[0]*rateH1
-        movey = img.shape[1]*rateW1
-        x1,y1,x2,y2 = int(x1+movex),int(y1+movey),int(x2+movex),int(y2+movey)
+        x1,y1,x2,y2 = int(x1+lowH),int(y1+lowW),int(x2+lowH),int(y2+lowW)
         # 在img上绘图
         return True,[y1,x1,y2,x2]
     

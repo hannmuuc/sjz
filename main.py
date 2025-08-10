@@ -2,6 +2,8 @@ from ast import mod
 import tkinter as tk
 import pyautogui
 import time
+
+from win32.lib.win32con import PSD_DISABLEORIENTATION
 import cv2
 import random
 import mss
@@ -246,11 +248,19 @@ def doOcrContinue():
 
 
 if __name__ == "__main__":
-    from util.video import videoSolve
+    from util.video import videoSolve,imageFilter,doFilter
+
     from util.multi_video import multiVideoTask
 
-    videoSolve(use_cuda=True)
+    # videoSolve(use_cuda=True)
     # multiVideoTask()
+    imageFilter("./dataset")
+
+    # img = cv2.imread("10562.jpg")
+    # suc,box =doFilter(img)
+    # if suc:
+    #     cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 2)
+
 
 
 
