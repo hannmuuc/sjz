@@ -6,6 +6,7 @@
 node_modules/
 dataset/
 video/
+
 data/           # 常见的大型数据文件夹
 models/         # 可能包含大型模型文件
 dist/           # 构建输出目录
@@ -35,6 +36,10 @@ secret.txt
 .env.*.local
 *.pem           # 密钥文件
 *.key           # 密钥文件
+*.mp4
+*.jpg
+*.png
+
 
 # 忽略IDE相关文件
 .vscode/
