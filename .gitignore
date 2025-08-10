@@ -26,6 +26,7 @@ vendor/         # 第三方依赖
 *.avi
 *.flv
 *.wmv
+*.json
 
 # 忽略特定文件
 secret.txt
