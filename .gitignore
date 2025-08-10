@@ -1,26 +1,70 @@
-# 忽略所有.log文件
+# 忽略日志文件
 *.log
+*.logs
 
-# 忽略node_modules目录
+# 忽略依赖和大文件夹
 node_modules/
 dataset/
 video/
+data/           # 常见的大型数据文件夹
+models/         # 可能包含大型模型文件
+dist/           # 构建输出目录
+build/          # 编译输出目录
+vendor/         # 第三方依赖
 
+# 忽略图片和视频文件
+*.mp4
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.svg
+*.mov
+*.avi
+*.flv
+*.wmv
 
 # 忽略特定文件
 secret.txt
 .env
-*.mp4
-*.jpg
-*.png
+.env.local
+.env.*.local
+*.pem           # 密钥文件
+*.key           # 密钥文件
 
-# 忽略IDE生成的文件（如VS Code）
+# 忽略IDE相关文件
 .vscode/
+.idea/          # IntelliJ IDEA
 *.sublime-project
-
-# 忽略操作系统生成的文件
+*.sublime-workspace
+*.swp           # Vim交换文件
+*.swo           # Vim交换文件
 .DS_Store       # Mac
 Thumbs.db       # Windows
-# 忽略pycache目录
-__pycache__/
 
+# Python相关忽略
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/           # 虚拟环境
+.venv/          # 虚拟环境
